@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: tool-leash
+Version: 0.2.0
+Summary: Stateful Execution Budgets and HITL constraints for Agent Tools
+Author-email: Antigravity <antigravity@example.com>
+Requires-Python: >=3.8
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: pre-commit>=3.0; extra == "dev"
+Requires-Dist: ruff>=0.9; extra == "dev"
+Requires-Dist: mypy>=1.14; extra == "dev"
+Requires-Dist: bandit>=1.8; extra == "dev"

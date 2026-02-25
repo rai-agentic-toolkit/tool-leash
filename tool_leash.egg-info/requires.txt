@@ -1,0 +1,8 @@
+
+[dev]
+pytest
+pytest-asyncio
+pre-commit>=3.0
+ruff>=0.9
+mypy>=1.14
+bandit>=1.8
