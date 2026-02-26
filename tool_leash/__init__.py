@@ -1,13 +1,13 @@
 from .budget import Budget
 from .decorator import leash
-from .exceptions import HITLYieldException, LeashBudgetExceeded, LeashError
-from .hitl import HITLPolicy
+from .exceptions import CallBlockedError, LeashBudgetExceeded, LeashError
+from .guard import CallGuard
 
 __all__ = [
     "Budget",
-    "HITLPolicy",
+    "CallGuard",
     "leash",
     "LeashError",
     "LeashBudgetExceeded",
-    "HITLYieldException",
+    "CallBlockedError",
 ]

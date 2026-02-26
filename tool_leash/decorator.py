@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any, TypeVar, cast
 
 from .budget import Budget
-from .hitl import HITLPolicy
+from .guard import CallGuard
 from .serialization import deep_serialize, estimate_tokens_safely
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def leash(
     budget: Budget | None = None,
-    hitl: HITLPolicy | None = None,
+    hitl: CallGuard | None = None,
     tokenizer_func: Callable[[str], int] | None = None,
 ) -> Callable[[F], F]:
     """

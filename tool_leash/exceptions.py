@@ -10,8 +10,8 @@ class LeashBudgetExceeded(LeashError):
     pass
 
 
-class HITLYieldException(LeashError):
-    """Raised when an operation requires Human-In-The-Loop approval."""
+class CallBlockedError(LeashError):
+    """Raised when a tool call is blocked by a CallGuard policy."""
 
     def __init__(self, message: str, tool_name: str, trigger_reason: str):
         super().__init__(message)

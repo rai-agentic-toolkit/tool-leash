@@ -7,8 +7,8 @@ import pytest
 
 from tool_leash import (
     Budget,
-    HITLPolicy,
-    HITLYieldException,
+    CallBlockedError,
+    CallGuard,
     LeashBudgetExceeded,
     LeashError,
     leash,
@@ -49,14 +49,14 @@ async def test_async_coroutine_budget_exhaustion():
 
 @pytest.mark.asyncio
 async def test_async_coroutine_hitl_blocking():
-    policy = HITLPolicy(restricted_args={"cmd": ["rm -rf"]})
+    policy = CallGuard(restricted_args={"cmd": ["rm -rf"]})
 
     @leash(hitl=policy)
     async def run_cmd(cmd: str) -> str:
         return cmd
 
     assert await run_cmd("ls -la") == "ls -la"
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         await run_cmd("rm -rf /")
 
 
@@ -121,13 +121,13 @@ def test_sync_generator_is_lazy():
 
 
 def test_sync_generator_hitl_blocks_mid_stream():
-    policy = HITLPolicy(restricted_args={"item": ["DANGER"]})
+    policy = CallGuard(restricted_args={"item": ["DANGER"]})
 
     @leash(hitl=policy)
     def safe_stream(item: str):
         yield item
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         list(safe_stream("DANGER payload"))
 
 
@@ -223,13 +223,13 @@ def test_hitl_custom_validator_blocks():
         import json
 
         if len(json.dumps(args)) > 100:
-            raise HITLYieldException(
+            raise CallBlockedError(
                 message="Payload too large",
                 tool_name="unknown",
                 trigger_reason="Payload exceeds 100 chars",
             )
 
-    policy = HITLPolicy(custom_validator=no_large_payloads)
+    policy = CallGuard(custom_validator=no_large_payloads)
 
     @leash(hitl=policy)
     def ingest(data: str) -> str:
@@ -239,7 +239,7 @@ def test_hitl_custom_validator_blocks():
     assert ingest("hi") == "hi"
 
     # Oversized payload blocked
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         ingest("x" * 200)
 
 
@@ -250,7 +250,7 @@ def test_hitl_custom_validator_runs_before_restricted_args():
     def recording_validator(args: dict) -> None:
         calls.append("custom")
 
-    policy = HITLPolicy(
+    policy = CallGuard(
         restricted_args={"q": ["DROP"]},
         custom_validator=recording_validator,
     )
@@ -360,11 +360,11 @@ def test_leash_budget_exceeded_is_leash_error():
 
 
 def test_hitl_yield_exception_is_leash_error():
-    assert issubclass(HITLYieldException, LeashError)
+    assert issubclass(CallBlockedError, LeashError)
 
 
 def test_hitl_exception_attributes():
-    exc = HITLYieldException(
+    exc = CallBlockedError(
         message="blocked",
         tool_name="my_tool",
         trigger_reason="matched DROP",

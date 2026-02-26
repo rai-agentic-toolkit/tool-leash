@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tool-leash"
 version = "0.2.0"
-description = "Stateful execution budgets and HITL constraints for AI agent tools"
+description = "Stateful execution budgets and call-guard policies for AI agent tools"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "Jesse Castro & Raven", email = "jesse@ravenagent.dev"}]

@@ -2,12 +2,12 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from .exceptions import HITLYieldException
+from .exceptions import CallBlockedError
 from .serialization import deep_search_dict
 
 
-class HITLPolicy:
-    """Evaluates whether a tool call requires Human-In-The-Loop (HITL) approval."""
+class CallGuard:
+    """Evaluates whether a tool call should be blocked based on argument patterns."""
 
     def __init__(
         self,
@@ -19,8 +19,8 @@ class HITLPolicy:
 
     def evaluate_serialized(self, func_name: str, serialized_args: dict[str, Any]) -> None:
         """
-        Evaluate if the PRE-SERIALIZED provided arguments trigger any HITL policies.
-        Raises HITLYieldException if a rule is triggered.
+        Evaluate if the PRE-SERIALIZED provided arguments trigger any guard policies.
+        Raises CallBlockedError if a rule is triggered.
         """
         # 1. Custom validator (Top Priority)
         if self.custom_validator:
@@ -41,8 +41,8 @@ class HITLPolicy:
 
                 for substring in forbidden_substrings:
                     if substring in val_str:
-                        raise HITLYieldException(
-                            message=f"HITL Approval Required: Tool '{func_name}' argument '{target_arg_name}' contains restricted substring '{substring}'.",
+                        raise CallBlockedError(
+                            message=f"Call blocked: Tool '{func_name}' argument '{target_arg_name}' contains restricted substring '{substring}'.",
                             tool_name=func_name,
                             trigger_reason=f"Matched restricted substring '{substring}' in resolved argument '{target_arg_name}': {val_str}",
                         )

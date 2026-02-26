@@ -1,6 +1,6 @@
 # tool-leash
 
-**Stateful execution budgets and HITL constraints for AI agent tools.**
+**Stateful execution budgets and call-guard policies for AI agent tools.**
 
 > **Project Status:** This is a personal project exploring strict agentic security patterns. The organization name was chosen by my AI agent—there is no VC funding or sales team here, just code.
 
@@ -19,7 +19,7 @@ When building AI agents, you give the model access to tools (functions). Without
 `tool-leash` wraps your tool functions with a decorator that enforces:
 
 1. **Execution Budgets** — Hard limits on call count and token consumption
-2. **HITL Policies** — Block execution when arguments contain restricted patterns (raises exception for your agent framework to handle)
+2. **Call Guard Policies** — Block execution when arguments contain restricted patterns (raises exception for your agent framework to handle)
 
 ## Install
 
@@ -35,13 +35,13 @@ pip install -e .
 ## Quick Start
 
 ```python
-from tool_leash import leash, Budget, HITLPolicy, LeashBudgetExceeded, HITLYieldException
+from tool_leash import leash, Budget, CallGuard, LeashBudgetExceeded, CallBlockedError
 
 # 1. Define your budget constraints
 budget = Budget(max_calls=10, max_tokens=50000)
 
-# 2. Define HITL policy for dangerous operations
-policy = HITLPolicy(restricted_args={"query": ["DROP", "DELETE", "TRUNCATE"]})
+# 2. Define call guard policy for dangerous operations
+policy = CallGuard(restricted_args={"query": ["DROP", "DELETE", "TRUNCATE"]})
 
 # 3. Apply the leash decorator
 @leash(budget=budget, hitl=policy)
@@ -54,7 +54,7 @@ execute_sql("SELECT * FROM users")  # OK
 # Dangerous queries are blocked
 try:
     execute_sql("DROP TABLE users")
-except HITLYieldException as e:
+except CallBlockedError as e:
     print(f"Blocked: {e.trigger_reason}")
     # -> Matched restricted substring 'DROP' in argument 'query'
     # Your agent framework can catch this and request human approval
@@ -87,15 +87,15 @@ print(budget.get_remaining_calls())   # -> 100
 print(budget.get_remaining_tokens())  # -> 500000
 ```
 
-### HITLPolicy
+### CallGuard
 
-Evaluates tool arguments against restricted patterns. Raises `HITLYieldException` when a match is found.
+Evaluates tool arguments against restricted patterns. Raises `CallBlockedError` when a match is found.
 
 ```python
-from tool_leash import HITLPolicy
+from tool_leash import CallGuard
 
 # Block specific patterns in specific arguments
-policy = HITLPolicy(
+policy = CallGuard(
     restricted_args={
         "query": ["DROP", "DELETE", "TRUNCATE"],
         "path": ["/etc/", "/root/", "~/.ssh/"],
@@ -109,19 +109,19 @@ policy = HITLPolicy(
 For complex validation logic, pass a custom validator function:
 
 ```python
-from tool_leash import HITLPolicy, HITLYieldException
+from tool_leash import CallGuard, CallBlockedError
 
 def block_large_payloads(args: dict) -> None:
     """Reject payloads over 1MB."""
     import json
     if len(json.dumps(args)) > 1_000_000:
-        raise HITLYieldException(
+        raise CallBlockedError(
             message="Payload too large",
             tool_name="unknown",
             trigger_reason="Payload exceeds 1MB limit"
         )
 
-policy = HITLPolicy(custom_validator=block_large_payloads)
+policy = CallGuard(custom_validator=block_large_payloads)
 ```
 
 ### The `@leash` Decorator
@@ -129,10 +129,10 @@ policy = HITLPolicy(custom_validator=block_large_payloads)
 Wraps sync functions, async functions, generators, and async generators.
 
 ```python
-from tool_leash import leash, Budget, HITLPolicy
+from tool_leash import leash, Budget, CallGuard
 
 budget = Budget(max_calls=50)
-policy = HITLPolicy(restricted_args={"url": ["localhost", "127.0.0.1"]})
+policy = CallGuard(restricted_args={"url": ["localhost", "127.0.0.1"]})
 
 # Sync function
 @leash(budget=budget, hitl=policy)
@@ -179,7 +179,7 @@ def my_tool(data: str):
 | ------ | ---------- |
 | **Runaway agents** | `max_calls` hard limit stops infinite loops |
 | **Token burn attacks** | `max_tokens` caps total I/O consumption |
-| **Dangerous operations** | HITL policy blocks restricted patterns |
+| **Dangerous operations** | Call guard policy blocks restricted patterns |
 | **Deep nesting attacks** | `deep_serialize` has depth limits (default: 10) |
 | **Circular reference DoS** | Cycle detection prevents `RecursionError` crashes |
 | **Memory exhaustion** | Token estimation uses O(1) memory (no `json.dumps`) |
@@ -189,14 +189,14 @@ def my_tool(data: str):
 ## Exception Hierarchy
 
 ```python
-from tool_leash import LeashError, LeashBudgetExceeded, HITLYieldException
+from tool_leash import LeashError, LeashBudgetExceeded, CallBlockedError
 
 try:
     dangerous_tool()
 except LeashBudgetExceeded:
     # Budget exhausted - stop the agent
     pass
-except HITLYieldException as e:
+except CallBlockedError as e:
     # Restricted pattern detected - handle in your agent framework
     print(e.tool_name)       # The blocked function name
     print(e.trigger_reason)  # Why it was blocked
@@ -238,10 +238,10 @@ For defense-in-depth, combine with **[`secure-ingest`](https://github.com/rai-ag
 
 ```python
 from secure_ingest import parse, ContentType
-from tool_leash import leash, Budget, HITLPolicy
+from tool_leash import leash, Budget, CallGuard
 
 budget = Budget(max_calls=50, max_tokens=100000)
-policy = HITLPolicy(restricted_args={"query": ["DROP", "DELETE"]})
+policy = CallGuard(restricted_args={"query": ["DROP", "DELETE"]})
 
 @leash(budget=budget, hitl=policy)
 def process_payload(data: dict):
@@ -255,7 +255,7 @@ result = parse(
     max_size_bytes=10240
 )
 
-# 2. Execute with budget/HITL constraints (tool-leash)
+# 2. Execute with budget/call-guard constraints (tool-leash)
 process_payload(result.content)
 ```
 
@@ -263,7 +263,7 @@ process_payload(result.content)
 
 `tool-leash` operates as a **pre-execution constraint layer**:
 
-- **Stateless evaluation** — HITL policies are pure functions with no side effects
+- **Stateless evaluation** — Call guard policies are pure functions with no side effects
 - **Graceful degradation** — Serialization handles cycles and depth limits with fallback strings rather than crashing
 - **Defense-in-depth** — Designed to complement, not replace, other security layers
 

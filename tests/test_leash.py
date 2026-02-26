@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from tool_leash import Budget, HITLPolicy, HITLYieldException, LeashBudgetExceeded, leash
+from tool_leash import Budget, CallBlockedError, CallGuard, LeashBudgetExceeded, leash
 from tool_leash.serialization import deep_serialize
 
 
@@ -22,7 +22,7 @@ def test_budget_exhaustion():
 
 
 def test_hitl_targeted_args():
-    policy = HITLPolicy(restricted_args={"query": ["DROP", "DELETE"]})
+    policy = CallGuard(restricted_args={"query": ["DROP", "DELETE"]})
 
     @leash(hitl=policy)
     def db_query(user_name: str, query: str):
@@ -33,21 +33,21 @@ def test_hitl_targeted_args():
         == "query executed for John Dropdown"
     )
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         db_query(user_name="admin", query="DROP TABLE users")
 
 
 def test_hitl_deep_kwargs():
-    policy = HITLPolicy(restricted_args={"query": ["DROP", "DELETE"]})
+    policy = CallGuard(restricted_args={"query": ["DROP", "DELETE"]})
 
     @leash(hitl=policy)
     def db_flex(**kwargs):
         return f"Executing {kwargs}"
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         db_flex(target="production", query="DROP TABLE users")
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         db_flex(payload={"query": "DELETE FROM users"})
 
 
@@ -164,19 +164,19 @@ def test_v6_slots_evasion():
         def __init__(self):
             self.query = "DROP TABLE users"
 
-    policy = HITLPolicy(restricted_args={"query": ["DROP"]})
+    policy = CallGuard(restricted_args={"query": ["DROP"]})
 
     @leash(hitl=policy)
     def db_runner(payload: Any):
         pass
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         db_runner(SlottedExploit())
 
 
 def test_v6_input_generator_bypass():
     """Verify that malicious strings flowing IN via a generator are caught."""
-    policy = HITLPolicy(restricted_args={"query": ["DROP"]})
+    policy = CallGuard(restricted_args={"query": ["DROP"]})
     budget = Budget(max_tokens=2000)
 
     @leash(hitl=policy, budget=budget)
@@ -188,5 +188,5 @@ def test_v6_input_generator_bypass():
         yield {"harmless": "data"}
         yield {"query": "DROP TABLE users"}
 
-    with pytest.raises(HITLYieldException):
+    with pytest.raises(CallBlockedError):
         consume_stream(malicious_generator())
