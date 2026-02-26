@@ -1,20 +1,36 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tool-leash"
 version = "0.2.0"
-description = "Stateful Execution Budgets and HITL constraints for Agent Tools"
-authors = [{name = "Antigravity", email = "antigravity@example.com"}]
-dependencies = [
-]
+description = "Stateful execution budgets and HITL constraints for AI agent tools"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Jesse Castro & Raven", email = "jesse@ravenagent.dev"}]
+dependencies = []
 requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/rai-agentic-toolkit/tool-leash"
+Repository = "https://github.com/rai-agentic-toolkit/tool-leash"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
+    "pytest>=7.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.0",
     "pre-commit>=3.0",
     "ruff>=0.9",
     "mypy>=1.14",
