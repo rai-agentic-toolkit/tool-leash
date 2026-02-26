@@ -273,6 +273,21 @@ process_payload(result.content)
 - Network-level filtering (use firewalls)
 - Semantic intent classification (use `secure-ingest` with custom validators)
 
+### CallGuard Limitations
+
+`CallGuard` uses **substring matching** on serialized argument values. This is
+intentionally simple but has known bypass vectors:
+
+- **Spacing variants** — `"DROP TABLE"` is blocked; `"DROP  TABLE"` (double space) is not
+- **Encoding tricks** — Unicode lookalikes, hex escapes, or URL encoding are not normalized
+- **Flag reordering** — Shell-style argument reordering can defeat ordered substring checks
+- **Case sensitivity** — Matching is case-sensitive by default; `"drop table"` bypasses `"DROP"`
+
+`CallGuard` is a **first line of defense** — a fast, cheap filter that catches obvious
+patterns. It is not a substitute for semantic validation. For high-security contexts,
+combine with a `custom_validator` that performs your own normalization, or use
+[`secure-ingest`](https://github.com/rai-agentic-toolkit/secure-ingest) for structural validation before the tool is called.
+
 ## License
 
 MIT
