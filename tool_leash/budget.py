@@ -33,7 +33,6 @@ class Budget:
                         f"Budget exhausted: consuming {tokens} tokens would exceed "
                         f"max_tokens ({self.max_tokens}). Tokens currently used: {self.tokens_used}."
                     )
-                self.tokens_used += tokens
 
     def get_remaining_calls(self) -> int | None:
         if self.max_calls is None:
